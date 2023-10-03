@@ -25,89 +25,150 @@
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td>004</td>
-                    <td>아이스아메리카노</td>
-                    <td>10:10</td>
-                    <td>10:15</td>
-                    <td>1,800원</td>
-                    <td>
-                        <button class="btn btn-primary btn-sm" onclick="changeStatus(this)">접수하기</button>
-                    </td>
-                    <td>
-                        <button class="btn btn-secondary btn-sm" onclick="printReceipt('0018')">영수증 출력</button>
-                        <button class="btn btn-secondary btn-sm" onclick="viewDetails('0018')">주문 상세</button>
-                    </td>
-                </tr>
-
-                <tr>
-                    <td>003</td>
-                    <td>카페라떼 외 4개</td>
-                    <td>11:30</td>
-                    <td>11:45</td>
-                    <td>8,700원</td>
-                    <td>
-                        <button class="btn btn-primary btn-sm" onclick="changeStatus(this)">접수하기</button>
-                    </td>
-                    <td>
-                        <button class="btn btn-secondary btn-sm" onclick="printReceipt('0018')">영수증 출력</button>
-                        <button class="btn btn-secondary btn-sm" onclick="viewDetails('0018')">주문 상세</button>
-                    </td>
-                </tr>
-
-                <tr>
-                    <td>002</td>
-                    <td>아이스티</td>
-                    <td>12:49</td>
-                    <td>12:54</td>
-                    <td>1,500원</td>
-                    <td>
-                        <button class="btn btn-primary btn-sm" onclick="changeStatus(this)">접수하기</button>
-                    </td>
-                    <td>
-                        <button class="btn btn-secondary btn-sm" onclick="printReceipt('0018')">영수증 출력</button>
-                        <button class="btn btn-secondary btn-sm" onclick="viewDetails('0018')">주문 상세</button>
-                    </td>
-                </tr>
-
-                <tr>
-                    <td>001</td>
-                    <td>아이스아메리카노 외 1개</td>
-                    <td>13:50</td>
-                    <td>14:07</td>
-                    <td>4,200원</td>
-                    <td>
-                        <button class="btn btn-primary btn-sm" onclick="changeStatus(this)">접수하기</button>
-                    </td>
-                    <td>
-                        <button class="btn btn-secondary btn-sm" onclick="printReceipt('0018')">영수증 출력</button>
-                        <button class="btn btn-secondary btn-sm" onclick="viewDetails('0018')">주문 상세</button>
-                    </td>
-                </tr>
-                <!-- 추가적인 예시 데이터 -->
-                <!-- ... 중략 ... -->
-                <!-- ... firestore에서 order data 들어올 때마다 출력되도록 ... -->
+                <!-- 여기에 Firestore 데이터가 동적으로 삽입됩니다. -->
             </tbody>
         </table>
     </div>
 
+        <!-- Firebase 설정 및 실시간 데이터 렌더링 코드 -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-analytics.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
     <script>
-        function changeStatus(btn) {
-            if (btn.innerText === "접수하기") {
-                btn.innerText = "준비완료";
-                btn.classList.remove('btn-primary');
-                btn.classList.add('btn-warning');
-            } else if (btn.innerText === "준비완료") {
-                btn.innerText = "픽업완료";
-                btn.classList.remove('btn-warning');
-                btn.classList.add('btn-secondary');
-            } else if (btn.innerText === "픽업완료") {
-                btn.innerText = "처리완료";
-                btn.classList.remove('btn-secondary');
-                btn.classList.add('btn-light');
-                btn.disabled = true;
-            }
+        var firebaseConfig = {
+        apiKey: "AIzaSyBfGzezMzKir_RRjstU0bUiSkCb8pjRQWE",
+        authDomain: "preorder-d773a.firebaseapp.com",
+        databaseURL: "https://preorder-d773a-default-rtdb.asia-southeast1.firebasedatabase.app",
+        projectId: "preorder-d773a",
+        storageBucket: "preorder-d773a.appspot.com",
+        messagingSenderId: "676616876310",
+        appId: "1:676616876310:web:3b8a52fd360f80f4cbe037",
+        measurementId: "G-JMRW6EP3ST"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        firebase.analytics();
+        const db = firebase.firestore();
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var tbody = document.querySelector('tbody');
+            
+            db.collection("orders").orderBy("timestamp", "desc").onSnapshot((querySnapshot) => {
+                tbody.innerHTML = '';
+                
+                querySnapshot.forEach((doc) => {
+                    var order = doc.data();
+                    var totalAdditionalItems = 0;  // Additional items counter
+                    var firstProductName = "";      // First product name holder
+                    
+                    order.items.forEach((item, index) => {
+                        // If it's the first item, save the product name
+                        if(index === 0) {
+                            firstProductName = item.productName;
+                        } 
+                        // Otherwise, add the quantity to the additional items counter
+                        else {
+                            totalAdditionalItems += item.quantity;
+                        }
+                    });
+                    
+                    // Construct display text
+                    var displayText = firstProductName;
+                    if (totalAdditionalItems > 0) {
+                        displayText += ` 외 ${totalAdditionalItems}개`;
+                    }
+
+                    // Calculate pickup time
+                    var orderTime = order.timestamp.toDate();  // Convert to JavaScript Date object
+                    var pickupTime = new Date(orderTime.getTime() + order.pickupTime * 60000);  // Add pickupTime minutes
+                    var pickupTimeStr = pickupTime.toLocaleTimeString();  // Convert to time string
+                    
+                    // Construct button text and class based on status
+                    var btnText = "접수하기";
+                    var btnClass = "btn-primary";
+                    var btnDisabled = "";
+                    switch (order.status) {
+                        case "ACCEPT":
+                            btnText = "준비완료";
+                            btnClass = "btn-warning";
+                            break;
+                        case "READY":
+                            btnText = "픽업완료";
+                            btnClass = "btn-success";
+                            break;
+                        case "FINISH":
+                            btnText = "처리완료";
+                            btnClass = "btn-light";
+                            btnDisabled = "disabled";
+                            break;
+                        // ... other cases ...
+                    }
+                    
+                
+                    // Build row for display...
+                    var row = `
+                        <tr>
+                            <td>${order.orderId}</td>
+                            <td>${displayText}</td>
+                            <td>${order.timestamp?.toDate().toLocaleTimeString() || "N/A"}</td>
+                            <td>${pickupTimeStr}</td>
+                            <td>${order.totalPrice}</td>
+                            <td>
+                                <button class="btn ${btnClass} btn-sm" onclick="changeStatus(this, '${order.orderId}')" ${btnDisabled}>${btnText}</button>                            </td>
+                            <td>
+                                <button class="btn btn-secondary btn-sm" onclick="printReceipt('${order.orderId}')">영수증 출력</button>
+                                <button class="btn btn-secondary btn-sm" onclick="viewDetails('${order.orderId}')">주문 상세</button>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+            });
+        });
+
+        // 상태 버튼 함수
+        function changeStatus(btn, orderId) {
+            console.log("changeStatus called with orderId:", orderId);
+
+            // Find the document with the specified orderId in the orders collection
+            db.collection("orders").where("orderId", "==", orderId).get().then((querySnapshot) => {
+                querySnapshot.forEach((doc) => {
+                    const currentStatus = doc.data().status;
+                    let newStatus = '';
+            
+                    switch (currentStatus) {
+                        case "ORDER":
+                            newStatus = 'ACCEPT';
+                            break;
+                        case "ACCEPT":
+                            newStatus = 'READY';
+                            break;
+                        case "READY":
+                            newStatus = 'FINISH';
+                            break;
+                        default:
+                            console.log("Unknown status: ", currentStatus);
+                            return;
+                    }
+
+                    // Update Firestore document
+                    doc.ref.update({
+                        status: newStatus
+                    }).then(() => {
+                        console.log("Status updated successfully in Firestore for orderId:", orderId);
+                    }).catch((error) => {
+                        console.error("Error updating document: ", error);
+                    });
+                });
+            }).catch((error) => {
+                console.error("Error finding document: ", error);
+            });
         }
+
+
+
+
         function printReceipt(orderId) {
             alert("영수증 출력하기: " + orderId);
         }
@@ -115,6 +176,7 @@
         function viewDetails(orderId) {
             alert("주문 상세 : " + orderId);
         }
+        
     </script>
 
 
