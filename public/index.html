@@ -1,18 +1,14 @@
 <!DOCTYPE html>
 <html lang="ko">
 
-<!-- <style>
-    #orderDetailContent {
-        font-family: 'Courier New', monospace;
-        white-space: pre;  /* 개행과 공백을 그대로 유지 */
-    }
-</style> -->
     
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>주문 현황</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" type="text/css" href="print.css" media="print">
+
     <style>
         .order-detail-row {
             display: flex;
@@ -29,9 +25,16 @@
         }
 
         .border-line {
-            border-bottom: 1px solid black; /* 바닥선 스타일 설정 */
-            margin: 10px 0; /* 상하 여백 추가 */
+            border-bottom: 2px solid black; /* 바닥선 스타일 설정 */
+            margin: 20px 0; /* 상하 여백 추가 */
         }
+        .dotted-line {
+            border-bottom: 1px dotted grey;
+            margin: 20px 0;
+        }
+
+        
+
 
     </style>
 </head>
@@ -70,6 +73,7 @@
                 <!-- 주문 상세 내용이 여기에 동적으로 삽입됩니다. -->
                 </div>
                 <div class="modal-footer">
+                    <!-- <button type="button" class="btn btn-secondary" onclick="printOrderDetail()">출력하기</button> -->
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
                 </div>
             </div>
@@ -223,11 +227,37 @@
         }
 
 
-
-
         function printReceipt(orderId) {
-            alert("영수증 출력하기: " + orderId);
+            alert("영수증 출력하기");
+            //viewDetails(orderId);
+            // let printContents = document.getElementById('orderDetailContent').innerHTML;
+            // let originalContents = document.body.innerHTML;
+
+            // document.body.innerHTML = printContents;
+
+            // window.print();
+
+            // document.body.innerHTML = originalContents;
         }
+
+        // function printOrderDetail() {
+        //     let printContents = document.getElementById('orderDetailContent').innerHTML;
+        //     let originalContents = document.body.innerHTML;
+
+        //     document.body.innerHTML = printContents;
+
+        //     window.print();
+
+        //     document.body.innerHTML = originalContents;
+
+        //     // Bootstrap 모달 초기화
+        //     let modalElement = document.getElementById('orderDetailModal');
+        //     let modal = new bootstrap.Modal(modalElement);
+        //     modal.show();
+        // }
+
+
+        
 
         function viewDetails(orderId) {
             // Find the document with the specified orderId in the orders collection
@@ -239,7 +269,7 @@
                     let total = 0;
                     let totalDrinks = 0;
                      
-                    order.items.forEach(item => {
+                    order.items.forEach((item, index) => {
                         let itemTotal = item.price * item.quantity;
                         totalDrinks += item.quantity;
 
@@ -263,7 +293,9 @@
                         });
 
                         total += itemTotal;
-                        orderDetailsHtml += "<br>";  // 아이템마다 1줄 띄우기
+                        if (index !== order.items.length-1) {
+                            orderDetailsHtml +=  `<div class="dotted-line"></div>`; 
+                        }
                     });
 
                     orderDetailsHtml += `<div class="border-line"></div>`;
