@@ -20,13 +20,19 @@
         }
         
         .product-name, .quantity, .price {
-            width: 33%;  /* 각 항목의 너비를 동일하게 만듭니다. */
+            flex: 1;  /* 각 항목의 너비를 동일하게 만듭니다. */
             text-align: right;  /* 오른쪽 정렬 */
         }
         
-        .product-name {
+        .product-name{
             text-align: left;  /* 제품 이름만 왼쪽 정렬 */
         }
+
+        .border-line {
+            border-bottom: 1px solid black; /* 바닥선 스타일 설정 */
+            margin: 10px 0; /* 상하 여백 추가 */
+        }
+
     </style>
 </head>
 
@@ -231,29 +237,27 @@
 
                     let orderDetailsHtml = "";
                     let total = 0;
+                    let totalDrinks = 0;
                      
                     order.items.forEach(item => {
-                        const SPACE = " "; // 10칸 공백
                         let itemTotal = item.price * item.quantity;
-                        const productName = item.productName.padEnd(30, " "); // 제품명 길이 조정
-                        const quantity = String(item.quantity).padStart(5, " "); // 수량 길이 조정
-                        const price = itemTotal.toLocaleString('ko-KR').padStart(10, " "); // 가격 길이 조정
+                        totalDrinks += item.quantity;
 
-                        orderDetailsHtml += `
-                        <div class="order-detail-row">
-                            <div class="product-name">${productName}</div>
-                            <div class="quantity">${quantity}</div>
-                            <div class="price">${price}</div>
+                        orderDetailsHtml += `<div class="order-detail-row">
+                            <div class="product-name">${item.productName}</div>
+                            <div class="quantity">${item.quantity}</div>
+                            <div class="price">${itemTotal.toLocaleString('ko-KR')}</div>
                         </div>`;
 
 
                         item.options.forEach(option => {
                             let optionTotal = option["가격"] * item.quantity;
-                            const optionName = ("↳ " + option["옵션명"]).padEnd(34, " ");
-                            const optionQuantity = String(item.quantity).padStart(5, " ");
-                            const optionPrice = optionTotal.toLocaleString('ko-KR').padStart(10, " ");
 
-                            orderDetailsHtml += `${optionName}${optionQuantity}${optionPrice}<br>`;
+                            orderDetailsHtml += `<div class="order-detail-row">
+                                <div class="product-name">↳ ${option["옵션명"]}</div>
+                                <div class="quantity">${item.quantity}</div>
+                                <div class="price">${optionTotal.toLocaleString('ko-KR')}</div>
+                            </div>`;
 
                             itemTotal += optionTotal;
                         });
@@ -262,8 +266,12 @@
                         orderDetailsHtml += "<br>";  // 아이템마다 1줄 띄우기
                     });
 
-                    orderDetailsHtml += `------------------------------------------------<br>`;
-                    orderDetailsHtml += `합계 ${total.toLocaleString('ko-KR').padStart(37, ' ')}`; // 합계 길이 조정
+                    orderDetailsHtml += `<div class="border-line"></div>`;
+                    orderDetailsHtml += `<div class="order-detail-row">
+                                            <div class="product-name">합계</div>
+                                            <div class="quantity">${totalDrinks}</div>
+                                            <div class="price">${total.toLocaleString('ko-KR')}</div>
+                                        </div>`;
 
                     document.getElementById('orderDetailContent').innerHTML = orderDetailsHtml;
                     const modal = new bootstrap.Modal(document.getElementById('orderDetailModal'));
