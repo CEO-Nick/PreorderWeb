@@ -1,11 +1,33 @@
 <!DOCTYPE html>
 <html lang="ko">
 
+<!-- <style>
+    #orderDetailContent {
+        font-family: 'Courier New', monospace;
+        white-space: pre;  /* 개행과 공백을 그대로 유지 */
+    }
+</style> -->
+    
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>주문 현황</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .order-detail-row {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .product-name, .quantity, .price {
+            width: 33%;  /* 각 항목의 너비를 동일하게 만듭니다. */
+            text-align: right;  /* 오른쪽 정렬 */
+        }
+        
+        .product-name {
+            text-align: left;  /* 제품 이름만 왼쪽 정렬 */
+        }
+    </style>
 </head>
 
 <body>
@@ -30,10 +52,34 @@
         </table>
     </div>
 
+    <!-- 주문 상세 정보 모달 -->
+    <div class="modal fade" id="orderDetailModal" tabindex="-1" aria-labelledby="orderDetailModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="orderDetailModalLabel">주문 상세</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="orderDetailContent" style="white-space: pre;">
+                <!-- 주문 상세 내용이 여기에 동적으로 삽입됩니다. -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+  
+
         <!-- Firebase 설정 및 실시간 데이터 렌더링 코드 -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-analytics.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+        <!-- Bootstrap JS, Popper.js, and jQuery -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
 
     <script>
         var firebaseConfig = {
@@ -73,16 +119,7 @@
                         }
                     });
                     
-                    // Construct display text
-                    var displayText = firstProductName;
-                    if (totalAdditionalItems > 0) {
-                        displayText += ` 외 ${totalAdditionalItems}개`;
-                    }
-
-                    // Calculate pickup time
-                    var orderTime = order.timestamp.toDate();  // Convert to JavaScript Date object
-                    var pickupTime = new Date(orderTime.getTime() + order.pickupTime * 60000);  // Add pickupTime minutes
-                    var pickupTimeStr = pickupTime.toLocaleTimeString();  // Convert to time string
+                    
                     
                     // Construct button text and class based on status
                     var btnText = "접수하기";
@@ -105,15 +142,28 @@
                         // ... other cases ...
                     }
                     
-                
+                    // Construct display text
+                    var displayText = firstProductName;
+                    if (totalAdditionalItems > 0) {
+                        displayText += ` 외 ${totalAdditionalItems}개`;
+                    }
+
+                    // Calculate pickup time
+                    var orderTime = order.timestamp.toDate();  // Convert to JavaScript Date object
+                    var pickupTime = new Date(orderTime.getTime() + order.pickupTime * 60000);  // Add pickupTime minutes
+                    var orderTimeStr = order.timestamp?.toDate().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) || "N/A";
+                    var pickupTimeStr = pickupTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+
+                    var priceStr = new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(order.totalPrice);
+
                     // Build row for display...
                     var row = `
                         <tr>
                             <td>${order.orderId}</td>
                             <td>${displayText}</td>
-                            <td>${order.timestamp?.toDate().toLocaleTimeString() || "N/A"}</td>
+                            <td>${orderTimeStr}</td>
                             <td>${pickupTimeStr}</td>
-                            <td>${order.totalPrice}</td>
+                            <td>${priceStr}</td>
                             <td>
                                 <button class="btn ${btnClass} btn-sm" onclick="changeStatus(this, '${order.orderId}')" ${btnDisabled}>${btnText}</button>                            </td>
                             <td>
@@ -174,8 +224,61 @@
         }
 
         function viewDetails(orderId) {
-            alert("주문 상세 : " + orderId);
+            // Find the document with the specified orderId in the orders collection
+            db.collection("orders").where("orderId", "==", orderId).get().then((querySnapshot) => {
+                querySnapshot.forEach((doc) => {
+                    const order = doc.data();
+
+                    let orderDetailsHtml = "";
+                    let total = 0;
+                     
+                    order.items.forEach(item => {
+                        const SPACE = " "; // 10칸 공백
+                        let itemTotal = item.price * item.quantity;
+                        const productName = item.productName.padEnd(30, " "); // 제품명 길이 조정
+                        const quantity = String(item.quantity).padStart(5, " "); // 수량 길이 조정
+                        const price = itemTotal.toLocaleString('ko-KR').padStart(10, " "); // 가격 길이 조정
+
+                        orderDetailsHtml += `
+                        <div class="order-detail-row">
+                            <div class="product-name">${productName}</div>
+                            <div class="quantity">${quantity}</div>
+                            <div class="price">${price}</div>
+                        </div>`;
+
+
+                        item.options.forEach(option => {
+                            let optionTotal = option["가격"] * item.quantity;
+                            const optionName = ("↳ " + option["옵션명"]).padEnd(34, " ");
+                            const optionQuantity = String(item.quantity).padStart(5, " ");
+                            const optionPrice = optionTotal.toLocaleString('ko-KR').padStart(10, " ");
+
+                            orderDetailsHtml += `${optionName}${optionQuantity}${optionPrice}<br>`;
+
+                            itemTotal += optionTotal;
+                        });
+
+                        total += itemTotal;
+                        orderDetailsHtml += "<br>";  // 아이템마다 1줄 띄우기
+                    });
+
+                    orderDetailsHtml += `------------------------------------------------<br>`;
+                    orderDetailsHtml += `합계 ${total.toLocaleString('ko-KR').padStart(37, ' ')}`; // 합계 길이 조정
+
+                    document.getElementById('orderDetailContent').innerHTML = orderDetailsHtml;
+                    const modal = new bootstrap.Modal(document.getElementById('orderDetailModal'));
+                    modal.show();
+                });
+            }).catch((error) => {
+                console.error("Error finding order details: ", error);
+            });
         }
+
+
+
+
+
+
         
     </script>
 
