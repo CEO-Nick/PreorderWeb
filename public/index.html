@@ -40,6 +40,9 @@
 </head>
 
 <body>
+    <div style="text-align: right; margin: 20px;">
+        <button class="btn btn-danger" onclick="signOutUser()">로그아웃</button>
+    </div>
 
     <div class="container mt-5">
         <h2>주문 현황</h2>
@@ -83,6 +86,7 @@
 
         <!-- Firebase 설정 및 실시간 데이터 렌더링 코드 -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.0.0/firebase-auth.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-analytics.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 
@@ -106,6 +110,8 @@
         firebase.initializeApp(firebaseConfig);
         firebase.analytics();
         const db = firebase.firestore();
+        const auth = firebase.auth();
+
 
         document.addEventListener('DOMContentLoaded', function() {
             var tbody = document.querySelector('tbody');
@@ -313,6 +319,27 @@
                 console.error("Error finding order details: ", error);
             });
         }
+
+        function signOutUser() {
+            auth.signOut().then(() => {
+                alert(`성공적으로 로그아웃되었습니다.`);
+                window.location.href = "login.html";
+            }).catch((error) => {
+                alert("로그아웃 중 문제가 발생했습니다. 다시 시도해주세요.");
+                console.error("Error signing out: ", error);
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Firebase 인증 상태 확인
+            firebase.auth().onAuthStateChanged(user => {
+                if (!user) {
+                    // 사용자가 로그인하지 않은 경우 로그인 페이지로 리다이렉트
+                    window.location.href = "login.html";
+                }
+            });
+        });
+
 
 
 
