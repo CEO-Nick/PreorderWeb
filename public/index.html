@@ -7,7 +7,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>주문 현황</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" type="text/css" href="print.css" media="print">
 
     <style>
         .order-detail-row {
@@ -76,7 +75,7 @@
                 <!-- 주문 상세 내용이 여기에 동적으로 삽입됩니다. -->
                 </div>
                 <div class="modal-footer">
-                    <!-- <button type="button" class="btn btn-secondary" onclick="printOrderDetail()">출력하기</button> -->
+                    <button type="button" class="btn btn-secondary" onclick="printOrderDetails()">출력하기</button>
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
                 </div>
             </div>
@@ -142,7 +141,7 @@
                     var btnClass = "btn-primary";
                     var btnDisabled = "";
                     switch (order.status) {
-                        case "ACCEPT":
+                        case "ACCEPTED":
                             btnText = "준비완료";
                             btnClass = "btn-warning";
                             break;
@@ -150,7 +149,7 @@
                             btnText = "픽업완료";
                             btnClass = "btn-success";
                             break;
-                        case "FINISH":
+                        case "FINISHED":
                             btnText = "처리완료";
                             btnClass = "btn-light";
                             btnDisabled = "disabled";
@@ -183,7 +182,6 @@
                             <td>
                                 <button class="btn ${btnClass} btn-sm" onclick="changeStatus(this, '${order.orderId}')" ${btnDisabled}>${btnText}</button>                            </td>
                             <td>
-                                <button class="btn btn-secondary btn-sm" onclick="printReceipt('${order.orderId}')">영수증 출력</button>
                                 <button class="btn btn-secondary btn-sm" onclick="viewDetails('${order.orderId}')">주문 상세</button>
                             </td>
                         </tr>
@@ -205,13 +203,13 @@
             
                     switch (currentStatus) {
                         case "ORDER":
-                            newStatus = 'ACCEPT';
+                            newStatus = 'ACCEPTED';
                             break;
-                        case "ACCEPT":
+                        case "ACCEPTED":
                             newStatus = 'READY';
                             break;
                         case "READY":
-                            newStatus = 'FINISH';
+                            newStatus = 'FINISHED';
                             break;
                         default:
                             console.log("Unknown status: ", currentStatus);
@@ -233,40 +231,22 @@
         }
 
 
-        function printReceipt(orderId) {
-            alert("영수증 출력하기");
-            //viewDetails(orderId);
-            // let printContents = document.getElementById('orderDetailContent').innerHTML;
-            // let originalContents = document.body.innerHTML;
-
-            // document.body.innerHTML = printContents;
-
-            // window.print();
-
-            // document.body.innerHTML = originalContents;
+        function printOrderDetails() {
+            let printWindow = window.open('', '', 'width=600,height=600');
+            printWindow.document.write('<html><head><title>Print</title>');
+            // 여기에 필요한 CSS 파일 또는 스타일을 추가합니다.
+            printWindow.document.write('</head><body>');
+            printWindow.document.write(document.getElementById('orderDetailContent').innerHTML);
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+            printWindow.print();
         }
 
-        // function printOrderDetail() {
-        //     let printContents = document.getElementById('orderDetailContent').innerHTML;
-        //     let originalContents = document.body.innerHTML;
-
-        //     document.body.innerHTML = printContents;
-
-        //     window.print();
-
-        //     document.body.innerHTML = originalContents;
-
-        //     // Bootstrap 모달 초기화
-        //     let modalElement = document.getElementById('orderDetailModal');
-        //     let modal = new bootstrap.Modal(modalElement);
-        //     modal.show();
-        // }
 
 
         
 
         function viewDetails(orderId) {
-            // Find the document with the specified orderId in the orders collection
             db.collection("orders").where("orderId", "==", orderId).get().then((querySnapshot) => {
                 querySnapshot.forEach((doc) => {
                     const order = doc.data();
@@ -274,7 +254,29 @@
                     let orderDetailsHtml = "";
                     let total = 0;
                     let totalDrinks = 0;
-                     
+                    
+                    // 주문번호 표시
+                    orderDetailsHtml += `<div class="order-detail-row">
+                        <div class="product-name">주문번호</div>
+                        <div class="quantity"></div>
+                        <div class="price">${orderId}</div>
+                    </div>`;
+                    orderDetailsHtml +=  `<div class="border-line"></div>`; 
+
+                    // 픽업 시간 계산 및 표시
+                    let pickupDate = new Date(order.timestamp.toDate());
+                    pickupDate.setMinutes(pickupDate.getMinutes() + order.pickupTime);
+
+                    let pickupTimeString = pickupDate.toLocaleString('ko-KR', { hour: '2-digit', minute: '2-digit' });  // 시간과 분만 표시
+
+                    orderDetailsHtml += `<div class="order-detail-row">
+                        <div class="product-name">픽업 시간</div>
+                        <div class="quantity"></div>
+                        <div class="price">${pickupTimeString}</div>
+                    </div>`;
+                    orderDetailsHtml +=  `<div class="border-line"></div>`; 
+
+                    // 주문 내역 출력
                     order.items.forEach((item, index) => {
                         let itemTotal = item.price * item.quantity;
                         totalDrinks += item.quantity;
