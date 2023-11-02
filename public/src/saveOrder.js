@@ -21,30 +21,30 @@ const predefinedOrders = [
       {
         "productName": "카페라떼(HOT)",
         "quantity": 1,
-        "price": 1800,
+        "productPrice": 1800,
         "options": [
           {
-            "옵션명": "사이즈업",
-            "가격": 300
+            "optionName": "사이즈업",
+            "optionPrice": 300
           },
           {
-            "옵션명": "샷 추가",
-            "가격": 500
+            "optionName": "샷 추가",
+            "optionPrice": 500
           }
         ]
       },
       {
         "productName": "자바칩 카페라떼(ICE)",
         "quantity": 2,
-        "price": 2200,
+        "productPrice": 2200,
         "options": [
           {
-            "옵션명": "사이즈업",
-            "가격": 300
+            "optionName": "사이즈업",
+            "optionPrice": 300
           },
           {
-            "옵션명": "샷 추가",
-            "가격": 500
+            "optionName": "샷 추가",
+            "optionPrice": 500
           }
         ]
       }
@@ -56,32 +56,32 @@ const predefinedOrders = [
     "orderId": "002",
     "uid": "5ftXqfVGZbdTZQ0SAiEIcz5fEEo2",
     "timestamp": admin.firestore.FieldValue.serverTimestamp(),
-    "pickupTime": 5, // 20분 후
+    "pickupTime": 5, // 5분 후
     "items": [
       {
         "productName": "아메리카노(HOT)",
         "quantity": 1,
-        "price": 1500,
+        "productPrice": 1500,
         "options": [
             {
-              "옵션명": "사이즈업",
-              "가격": 300
+              "optionName": "사이즈업",
+              "optionPrice": 300
             },
             {
-              "옵션명": "헤이즐넛 시럽추가",
-              "가격": 500
+              "optionName": "헤이즐넛 시럽추가",
+              "optionPrice": 500
             }
         ]
       },
       {
         "productName": "아메리카노(HOT)",
         "quantity": 1,
-        "price": 1500,
+        "productPrice": 1500,
         "options": 
           [
             {
-              "옵션명": "헤이즐넛 시럽추가",
-              "가격": 500
+              "optionName": "헤이즐넛 시럽추가",
+              "optionPrice": 500
             }
         ]
       }
@@ -98,15 +98,15 @@ const predefinedOrders = [
       {
         "productName": "아메리카노(ICE)",
         "quantity": 5,
-        "price": 1500,
+        "productPrice": 1500,
         "options": [
             {
-              "옵션명": "사이즈업",
-              "가격": 300
+              "optionName": "사이즈업",
+              "optionPrice": 300
             },
             {
-              "옵션명": "헤이즐넛 시럽추가",
-              "가격": 500
+              "optionName": "헤이즐넛 시럽추가",
+              "optionPrice": 500
             }
         ]
       },
@@ -123,28 +123,28 @@ const predefinedOrders = [
       {
         "productName": "바닐라 카페라떼(ICE)",
         "quantity": 1,
-        "price": 2100,
+        "productPrice": 2100,
         "options": [
             {
-              "옵션명": "사이즈업",
-              "가격": 300
+              "optionName": "사이즈업",
+              "optionPrice": 300
             },
           ]
       },
       {
         "productName": "민트 카페라떼(ICE)",
         "quantity": 1,
-        "price": 2200,
+        "productPrice": 2200,
         "options": []
       },
       {
         "productName": "카라멜마끼야또(ICE)",
         "quantity": 3,
-        "price": 2100,
+        "productPrice": 2100,
         "options": [
             {
-              "옵션명": "사이즈업",
-              "가격": 300
+              "optionName": "사이즈업",
+              "optionPrice": 300
             },
           ]
       },
@@ -163,7 +163,7 @@ const saveOrders = async () => {
         await orderRef.set(predefinedOrders[i]);
         console.log(`Order${i + 1} 저장 완료`);
         resolve();
-      }, 3000); // 10초 간격으로 실행
+      }, 5000); //5초 간격으로 주문 데이터 저장
     });
   }
 };
