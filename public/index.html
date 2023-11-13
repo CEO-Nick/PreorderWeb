@@ -130,7 +130,8 @@
                         } 
                         // Otherwise, add the quantity to the additional items counter
                         else {
-                            totalAdditionalItems += item.quantity;
+                            // totalAdditionalItems += item.quantity;
+                            totalAdditionalItems += 1;
                         }
                     });
                     
@@ -193,10 +194,11 @@
 
         // 상태 버튼 함수
         function changeStatus(btn, orderId) {
-            console.log("changeStatus called with orderId:", orderId);
+            //console.log("changeStatus called with orderId:", orderId);
 
             // Find the document with the specified orderId in the orders collection
-            db.collection("orders").where("orderId", "==", orderId).get().then((querySnapshot) => {
+            db.collection("orders").where("orderId", "==", Number(orderId)).get().then((querySnapshot) => {
+
                 querySnapshot.forEach((doc) => {
                     const currentStatus = doc.data().status;
                     let newStatus = '';
@@ -247,14 +249,15 @@
         
 
         function viewDetails(orderId) {
-            db.collection("orders").where("orderId", "==", orderId).get().then((querySnapshot) => {
+            db.collection("orders").where("orderId", "==", Number(orderId)).get().then((querySnapshot) => {
                 querySnapshot.forEach((doc) => {
                     const order = doc.data();
 
                     let orderDetailsHtml = "";
                     let total = 0;
                     let totalDrinks = 0;
-                    
+                    let specialRequest = "";
+
                     // 주문번호 표시
                     orderDetailsHtml += `<div class="order-detail-row">
                         <div class="product-name">주문번호</div>
@@ -275,10 +278,19 @@
                         <div class="price">${pickupTimeString}</div>
                     </div>`;
                     orderDetailsHtml +=  `<div class="border-line"></div>`; 
+                    
+                    // 요청사항 표시
+                    specialRequest = order["specialRequest"]
+                    orderDetailsHtml += `<div class="order-detail-row">
+                        <div class="product-name">요청 사항</div>
+                        <div class="quantity"></div>
+                        <div class="price">${specialRequest}</div>
+                    </div>`;
+                    orderDetailsHtml +=  `<div class="border-line"></div>`; 
 
                     // 주문 내역 출력
                     order.items.forEach((item, index) => {
-                        let itemTotal = item.price * item.quantity;
+                        let itemTotal = item.productPrice * item.quantity;
                         totalDrinks += item.quantity;
 
                         orderDetailsHtml += `<div class="order-detail-row">
@@ -289,10 +301,10 @@
 
 
                         item.options.forEach(option => {
-                            let optionTotal = option["가격"] * item.quantity;
+                            let optionTotal = option["optionPrice"] * item.quantity;
 
                             orderDetailsHtml += `<div class="order-detail-row">
-                                <div class="product-name">↳ ${option["옵션명"]}</div>
+                                <div class="product-name">↳ ${option["optionName"]}</div>
                                 <div class="quantity">${item.quantity}</div>
                                 <div class="price">${optionTotal.toLocaleString('ko-KR')}</div>
                             </div>`;

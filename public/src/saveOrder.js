@@ -13,7 +13,7 @@ const db = firestore.getFirestore();
 const predefinedOrders = [
   // 여기에 미리 정의된 주문 데이터를 배열로 배치합니다.
   {
-    "orderId": "001",
+    "orderId": 0,
     "uid": "m87pDkxHMscp65ZY7030o6APMEn1",
     "timestamp": admin.firestore.FieldValue.serverTimestamp(),
     "pickupTime": 15, // 15분 후
@@ -53,7 +53,7 @@ const predefinedOrders = [
     "status": "ORDER"
   },
   {
-    "orderId": "002",
+    "orderId": 0,
     "uid": "5ftXqfVGZbdTZQ0SAiEIcz5fEEo2",
     "timestamp": admin.firestore.FieldValue.serverTimestamp(),
     "pickupTime": 5, // 5분 후
@@ -90,7 +90,7 @@ const predefinedOrders = [
     "status": "ORDER"
   },
   {
-    "orderId": "003",
+    "orderId": 0,
     "uid": "RMleD2zwroMD9XLTiamnVSlIGmg1",
     "timestamp": admin.firestore.FieldValue.serverTimestamp(),
     "pickupTime": 10, // 20분 후
@@ -115,7 +115,7 @@ const predefinedOrders = [
     "status": "ORDER"
   },
   {
-    "orderId": "004",
+    "orderId": 0,
     "uid": "RMleD2zwroMD9XLTiamnVSlIGmg1",
     "timestamp": admin.firestore.FieldValue.serverTimestamp(),
     "pickupTime": 3, 
