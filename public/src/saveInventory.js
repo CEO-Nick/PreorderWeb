@@ -41,11 +41,20 @@ const inventoryItems = {
 };
 
 const saveInventoryData = async () => {
-    const inventoryRef = db.collection("inventory").doc("stock");
+  const inventoryRef = db.collection("inventory").doc("stock");
 
-    await inventoryRef.set(inventoryItems);
-  
-    console.log("재고 데이터 저장 완료");
-}
+  // Enhanced inventory items with status
+  const enhancedInventoryItems = {};
+  Object.entries(inventoryItems).forEach(([itemName, quantity]) => {
+      enhancedInventoryItems[itemName] = {
+          quantity: quantity,
+          status: '양호'  // '양호' is Korean for 'Good'
+      };
+  });
+
+  await inventoryRef.set(enhancedInventoryItems);
+
+  console.log("재고 데이터 저장 완료");
+};
 
 saveInventoryData();

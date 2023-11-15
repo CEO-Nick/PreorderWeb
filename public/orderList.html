@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+    
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>주문 현황</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        .order-detail-row {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .product-name, .quantity, .price {
+            flex: 1;  /* 각 항목의 너비를 동일하게 만듭니다. */
+            text-align: right;  /* 오른쪽 정렬 */
+        }
+        
+        .product-name{
+            text-align: left;  /* 제품 이름만 왼쪽 정렬 */
+        }
+
+        .border-line {
+            border-bottom: 2px solid black; /* 바닥선 스타일 설정 */
+            margin: 20px 0; /* 상하 여백 추가 */
+        }
+        .dotted-line {
+            border-bottom: 1px dotted grey;
+            margin: 20px 0;
+        }
+
+        
+
+
+    </style>
+</head>
+
+<body>
+    <div style="text-align: right; margin: 20px;">
+        <button class="btn btn-danger" onclick="signOutUser()">로그아웃</button>
+    </div>
+
+    <div class="container mt-5">
+        <h2>주문 현황</h2>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>주문 번호</th>
+                    <th>제품명</th>
+                    <th>주문시간</th>
+                    <th>픽업시간</th>
+                    <th>가격</th>
+                    <th>상태</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <!-- 여기에 Firestore 데이터가 동적으로 삽입됩니다. -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 주문 상세 정보 모달 -->
+    <div class="modal fade" id="orderDetailModal" tabindex="-1" aria-labelledby="orderDetailModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="orderDetailModalLabel">주문 상세</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" id="orderDetailContent" style="white-space: pre;">
+                <!-- 주문 상세 내용이 여기에 동적으로 삽입됩니다. -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" onclick="printOrderDetails()">출력하기</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">닫기</button>
+                </div>
+            </div>
+        </div>
+    </div>
+  
+
+        <!-- Firebase 설정 및 실시간 데이터 렌더링 코드 -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.0.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-analytics.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+        <!-- Bootstrap JS, Popper.js, and jQuery -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+
+    <script src="method/firebaseConfig.js"></script>
+    <script src="method/auth.js"></script>
+    <script src="method/orders.js"></script>
+    <script src="method/print.js"></script>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var tbody = document.querySelector('tbody');
+            
+            db.collection("orders").orderBy("timestamp", "desc").onSnapshot((querySnapshot) => {
+                tbody.innerHTML = '';
+                
+                querySnapshot.forEach((doc) => {
+                    var order = doc.data();
+                    var totalAdditionalItems = 0;  // Additional items counter
+                    var firstProductName = "";      // First product name holder
+                    
+                    order.items.forEach((item, index) => {
+                        // If it's the first item, save the product name
+                        if(index === 0) {
+                            firstProductName = item.productName;
+                        } 
+                        // Otherwise, add the quantity to the additional items counter
+                        else {
+                            // totalAdditionalItems += item.quantity;
+                            totalAdditionalItems += 1;
+                        }
+                    });
+                    
+                    
+                    
+                    // Construct button text and class based on status
+                    var btnText = "접수하기";
+                    var btnClass = "btn-primary";
+                    var btnDisabled = "";
+                    switch (order.status) {
+                        case "ACCEPTED":
+                            btnText = "준비완료";
+                            btnClass = "btn-warning";
+                            break;
+                        case "READY":
+                            btnText = "픽업완료";
+                            btnClass = "btn-success";
+                            break;
+                        case "FINISHED":
+                            btnText = "처리완료";
+                            btnClass = "btn-light";
+                            btnDisabled = "disabled";
+                            break;
+                        // ... other cases ...
+                    }
+                    
+                    // Construct display text
+                    var displayText = firstProductName;
+                    if (totalAdditionalItems > 0) {
+                        displayText += ` 외 ${totalAdditionalItems}개`;
+                    }
+
+                    // Calculate pickup time
+                    var orderTime = order.timestamp.toDate();  // Convert to JavaScript Date object
+                    var pickupTime = new Date(orderTime.getTime() + order.pickupTime * 60000);  // Add pickupTime minutes
+                    var orderTimeStr = order.timestamp?.toDate().toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }) || "N/A";
+                    var pickupTimeStr = pickupTime.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
+
+                    var priceStr = new Intl.NumberFormat('ko-KR', { style: 'currency', currency: 'KRW' }).format(order.totalPrice);
+
+                    // Build row for display...
+                    var row = `
+                        <tr>
+                            <td>${order.orderId}</td>
+                            <td>${displayText}</td>
+                            <td>${orderTimeStr}</td>
+                            <td>${pickupTimeStr}</td>
+                            <td>${priceStr}</td>
+                            <td>
+                                <button class="btn ${btnClass} btn-sm" onclick="changeStatus(this, '${order.orderId}')" ${btnDisabled}>${btnText}</button>                            </td>
+                            <td>
+                                <button class="btn btn-secondary btn-sm" onclick="viewDetails('${order.orderId}')">주문 상세</button>
+                            </td>
+                        </tr>
+                    `;
+                    tbody.innerHTML += row;
+                });
+            });
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Firebase 인증 상태 확인
+            firebase.auth().onAuthStateChanged(user => {
+                if (!user) {
+                    // 사용자가 로그인하지 않은 경우 로그인 페이지로 리다이렉트
+                    window.location.href = "login.html";
+                }
+            });
+        });
+        
+    </script>
+
+
+</body>
+
+</html>

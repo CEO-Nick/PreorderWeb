@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+    
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>재고 관리</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        .order-detail-row {
+            display: flex;
+            justify-content: space-between;
+        }
+        
+        .product-name, .quantity, .price {
+            flex: 1;  /* 각 항목의 너비를 동일하게 만듭니다. */
+            text-align: right;  /* 오른쪽 정렬 */
+        }
+        
+        .product-name{
+            text-align: left;  /* 제품 이름만 왼쪽 정렬 */
+        }
+
+        .border-line {
+            border-bottom: 2px solid black; /* 바닥선 스타일 설정 */
+            margin: 20px 0; /* 상하 여백 추가 */
+        }
+        .dotted-line {
+            border-bottom: 1px dotted grey;
+            margin: 20px 0;
+        }
+
+        
+
+
+    </style>
+</head>
+
+<body>
+    <div style="text-align: right; margin: 20px;">
+        <button class="btn btn-danger" onclick="signOutUser()">로그아웃</button>
+    </div>
+
+    <div class="container mt-5">
+        <h2>재고 현황</h2>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>재고명</th>
+                    <th>재고량</th>
+                    <th>재고 상태</th>
+                </tr>
+            </thead>
+            <tbody id="inventoryTableBody">
+                <!-- 여기에 Firestore 데이터가 동적으로 삽입됩니다. -->
+            </tbody>
+        </table>
+    </div>
+
+
+  
+
+        <!-- Firebase 설정 및 실시간 데이터 렌더링 코드 -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.0.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-analytics.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
+        <!-- Bootstrap JS, Popper.js, and jQuery -->
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.min.js"></script>
+
+    <script src="method/firebaseConfig.js"></script>
+    <script src="method/auth.js"></script>
+    <script src="method/orders.js"></script>
+    <script src="method/print.js"></script>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+    var inventoryTbody = document.getElementById('inventoryTableBody');
+
+    db.collection("inventory").doc("stock").onSnapshot((doc) => {
+        inventoryTbody.innerHTML = '';
+
+        var inventoryData = doc.data();
+        var categorizedData = categorizeInventoryData(inventoryData);
+
+        for (const category in categorizedData) {
+            var categoryHeader = document.createElement('tr');
+            categoryHeader.innerHTML = `<th colspan="3">${category}</th>`;
+            inventoryTbody.appendChild(categoryHeader);
+
+            categorizedData[category].forEach(item => {
+                var row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${item.name}</td>
+                    <td>${item.quantity}</td>
+                    <td><div style="background-color: ${getStatusColor(item.status)}; color: white; padding: 5px; text-align: center;">${item.status}</div></td>
+                `;
+                inventoryTbody.appendChild(row);
+            });
+        }
+    });
+});
+
+function categorizeInventoryData(inventoryData) {
+    let categories = {
+        '파우더': [],
+        '청': [],
+        '티백': [],
+        '기타': []
+    };
+
+    for (const [itemName, itemDetails] of Object.entries(inventoryData)) {
+        let item = { 
+            name: itemName, 
+            quantity: itemDetails.quantity, 
+            status: itemDetails.status 
+        };
+
+        if (itemName.includes("파우더")) {
+            categories['파우더'].push(item);
+        } else if (itemName.includes("청")) {
+            categories['청'].push(item);
+        } else if (itemName.includes("티백")) {
+            categories['티백'].push(item);
+        } else {
+            categories['기타'].push(item);
+        }
+    }
+
+    // Sorting each category
+    for (const category in categories) {
+        categories[category].sort((a, b) => statusPriority(a.status) - statusPriority(b.status));
+    }
+
+    return categories;
+}
+
+function getStatusColor(status) {
+    switch (status) {
+        case "양호":
+            return "green";
+        case "주의":
+            return "#FFD700";
+        case "경고":
+            return "red";
+        default:
+            return "gray"; // For any other status
+    }
+}
+
+// Helper function to assign priorities to statuses
+function statusPriority(status) {
+    switch (status) {
+        case "경고": return 1; // Highest priority
+        case "주의": return 2;
+        case "양호": return 3; // Lowest priority
+        default:     return 4;
+    }
+}
+        
+    </script>
+
+
+</body>
+
+</html>
