@@ -48,7 +48,6 @@ const saveInventoryData = async () => {
   Object.entries(inventoryItems).forEach(([itemName, quantity]) => {
       enhancedInventoryItems[itemName] = {
           quantity: quantity,
-          status: '양호'  // '양호' is Korean for 'Good'
       };
   });
 

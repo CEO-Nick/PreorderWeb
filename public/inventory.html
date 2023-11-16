@@ -32,7 +32,9 @@
             margin: 20px 0;
         }
 
-        
+        th {
+            font-size: 1.25em; /* 글씨 크기를 조정하고 싶은 값으로 설정 */
+        }
 
 
     </style>
@@ -51,6 +53,7 @@
                     <th>재고명</th>
                     <th>재고량</th>
                     <th>재고 상태</th>
+                    <th>재고 수정</th>
                 </tr>
             </thead>
             <tbody id="inventoryTableBody">
@@ -81,31 +84,34 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-    var inventoryTbody = document.getElementById('inventoryTableBody');
+            var inventoryTbody = document.getElementById('inventoryTableBody');
 
-    db.collection("inventory").doc("stock").onSnapshot((doc) => {
-        inventoryTbody.innerHTML = '';
+            db.collection("inventory").doc("stock").onSnapshot((doc) => {
+                inventoryTbody.innerHTML = '';
 
-        var inventoryData = doc.data();
-        var categorizedData = categorizeInventoryData(inventoryData);
+                var inventoryData = doc.data();
+                var categorizedData = categorizeInventoryData(inventoryData);
 
-        for (const category in categorizedData) {
-            var categoryHeader = document.createElement('tr');
-            categoryHeader.innerHTML = `<th colspan="3">${category}</th>`;
-            inventoryTbody.appendChild(categoryHeader);
+                for (const category in categorizedData) {
+                    var categoryHeader = document.createElement('tr');
+                    categoryHeader.innerHTML = `<th colspan="4">${category}</th>`;
+                    inventoryTbody.appendChild(categoryHeader);
 
-            categorizedData[category].forEach(item => {
-                var row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${item.name}</td>
-                    <td>${item.quantity}</td>
-                    <td><div style="background-color: ${getStatusColor(item.status)}; color: white; padding: 5px; text-align: center;">${item.status}</div></td>
-                `;
-                inventoryTbody.appendChild(row);
+                    categorizedData[category].forEach(item => {
+                        var row = document.createElement('tr');
+                        row.innerHTML = `
+                            <td>${item.name}</td>
+                            <td>${item.quantity}</td>
+                            <td><div style="background-color: ${getStatusColor(item)}; color: white; padding: 5px; text-align: center;">${getStatusText(item)}</div></td>
+                            <td>
+                                <button class="btn btn-primary btn-sm" onclick="editInventoryItem('${item.name}', ${item.quantity})">재고 수정</button>
+                            </td>
+                        `;
+                        inventoryTbody.appendChild(row);
+                    });
+                }
             });
-        }
-    });
-});
+        });
 
 function categorizeInventoryData(inventoryData) {
     let categories = {
@@ -135,34 +141,88 @@ function categorizeInventoryData(inventoryData) {
 
     // Sorting each category
     for (const category in categories) {
-        categories[category].sort((a, b) => statusPriority(a.status) - statusPriority(b.status));
+        categories[category].sort((a, b) => a.quantity - b.quantity);
     }
 
     return categories;
 }
 
-function getStatusColor(status) {
-    switch (status) {
-        case "양호":
+function getStatusColor(item) {
+    if (item.name.includes("티백")) {
+        if (item.quantity >= 70) {
             return "green";
-        case "주의":
+        } else if (item.quantity >= 30) {
             return "#FFD700";
-        case "경고":
+        } else {
             return "red";
-        default:
-            return "gray"; // For any other status
+        }
+    } else {
+        if (item.quantity >= 800) {
+            return "green";
+        } else if (item.quantity >= 400) {
+            return "#FFD700";
+        } else {
+            return "red";
+        }
     }
 }
 
-// Helper function to assign priorities to statuses
-function statusPriority(status) {
-    switch (status) {
-        case "경고": return 1; // Highest priority
-        case "주의": return 2;
-        case "양호": return 3; // Lowest priority
-        default:     return 4;
+function getStatusText(item) {
+    if (item.name.includes("티백")) {
+        if (item.quantity >= 70) {
+            return "양호";
+        } else if (item.quantity >= 30) {
+            return "주의";
+        } else {
+            return "위험";
+        }
+    } else {
+        if (item.quantity >= 800) {
+            return "양호";
+        } else if (item.quantity >= 400) {
+            return "주의";
+        } else {
+            return "위험";
+        }
     }
 }
+
+
+// 상태에 따라 재고 정렬시 필요한 함수
+// function statusPriority(item) {
+//     if (item.name.includes("티백")) {
+//         if (item.quantity < 30) {
+//             return 1; // 가장 높은 우선순위 (위험)
+//         } else if (item.quantity < 70) {
+//             return 2; // 중간 우선순위 (주의)
+//         } else {
+//             return 3; // 가장 낮은 우선순위 (양호)
+//         }
+//     } else {
+//         if (item.quantity < 400) {
+//             return 1; // 가장 높은 우선순위 (위험)
+//         } else if (item.quantity < 800) {
+//             return 2; // 중간 우선순위 (주의)
+//         } else {
+//             return 3; // 가장 낮은 우선순위 (양호)
+//         }
+//     }
+// }
+
+
+    function editInventoryItem(name, currentQuantity) {
+        var newQuantity = prompt(`재고 수정: ${name}\n현재 재고량: ${currentQuantity}\n새 재고량 입력:`, currentQuantity);
+        if (newQuantity !== null) {
+            db.collection("inventory").doc("stock").update({
+                [`${name}.quantity`]: parseInt(newQuantity)
+            }).then(() => {
+                console.log("재고가 업데이트 되었습니다.");
+            }).catch((error) => {
+                console.error("에러 발생:", error);
+            });
+        }
+    }
+
         
     </script>
 
