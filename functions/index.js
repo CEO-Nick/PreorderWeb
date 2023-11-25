@@ -55,7 +55,9 @@ async function updateProductStock(productName, options, quantity, stockRef) {
 
             // 옵션에 따른 재료 사용량 조정
             for (const option of options) {
-                ingredients = await adjustIngredientsForOption(ingredients, option.optionName);
+                if (option.optionName === "사이즈업") {
+                    ingredients = await adjustIngredientsForOption(ingredients, option.optionName);
+                }
             }
 
             // 재고를 업데이트합니다.
@@ -125,7 +127,10 @@ async function updateStock(ingredients, quantity, stockRef) {
                 throw "Ingredient or quantity not found in stock!";
             }
 
+            const originQuantity = stockData[ingredient].quantity
+            logger.log("Before Quantity", { ingredient, originQuantity });
             const newQuantity = stockData[ingredient].quantity - amount * quantity;
+            logger.log("After Quantity", { ingredient, newQuantity });
             transaction.update(stockRef, {[ingredientField]: newQuantity});
             logger.log("Updated stock for ingredient", { ingredient, newQuantity });
         }
