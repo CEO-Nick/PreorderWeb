@@ -26,21 +26,29 @@ const db = admin.firestore();
 
 exports.updateInventoryOnOrder = functions.firestore
     .document('orders/{orderId}')
-    .onCreate(async (snap, context) => {
-        const orderData = snap.data();
-        const items = orderData.items;
+    .onUpdate(async (change, context) => {
+        const newOrderData = change.after.data();
+        const oldOrderData = change.before.data();
+    
 
-        const stockRef = db.collection('inventory').doc('stock');
+        if (oldOrderData.status !== "ACCEPTED" && newOrderData.status === "ACCEPTED") {
+            const items = newOrderData.items;
 
-        logger.log("Processing order", { orderId: context.params.orderId, numberOfItems: items.length });
+            const stockRef = db.collection('inventory').doc('stock');
 
-        for (const item of items) {
-            const productName = item.productName;
-            logger.log("Processing item", { productName });
+            logger.log("Processing order", { orderId: context.params.orderId, numberOfItems: items.length });
 
-            // 제품 및 옵션 재고 업데이트
-            await updateProductStock(productName, item.options, item.quantity, stockRef);
-            await updateOptionsStock(item.options, item.quantity, stockRef);
+            for (const item of items) {
+                const productName = item.productName;
+                logger.log("Processing item", { productName });
+
+                // 제품 및 옵션 재고 업데이트
+                await updateProductStock(productName, item.options, item.quantity, stockRef);
+                await updateOptionsStock(item.options, item.quantity, stockRef);
+            }
+        } else {
+            logger.log("status가 ORDER 에서 ACCEPTED 로 변경되지 않았습니다");
+            return null;
         }
     });
 
@@ -55,7 +63,9 @@ async function updateProductStock(productName, options, quantity, stockRef) {
 
             // 옵션에 따른 재료 사용량 조정
             for (const option of options) {
-                ingredients = await adjustIngredientsForOption(ingredients, option.optionName);
+                if (option.optionName === "사이즈업") {
+                    ingredients = await adjustIngredientsForOption(ingredients, option.optionName);
+                }
             }
 
             // 재고를 업데이트합니다.
@@ -125,7 +135,10 @@ async function updateStock(ingredients, quantity, stockRef) {
                 throw "Ingredient or quantity not found in stock!";
             }
 
+            const originQuantity = stockData[ingredient].quantity
+            logger.log("Before Quantity", { ingredient, originQuantity });
             const newQuantity = stockData[ingredient].quantity - amount * quantity;
+            logger.log("After Quantity", { ingredient, newQuantity });
             transaction.update(stockRef, {[ingredientField]: newQuantity});
             logger.log("Updated stock for ingredient", { ingredient, newQuantity });
         }
